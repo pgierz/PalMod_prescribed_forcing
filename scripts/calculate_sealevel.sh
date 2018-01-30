@@ -113,7 +113,7 @@ do
 done
 
 # define CDO with some common switches
-cdo="cdo -s"
+cdo="cdo -f nc -P 24"
 
 # Define the directories to be used: original data location and temporary workdir
 RAW_DATA_DIR=${PROJECT_HOME}/original_data_ltarasov/
@@ -193,7 +193,7 @@ function calculate_masked_ice_volume {
     ### Define Variable names
     GSM_MASK=ICEM
 
-    $cdo -P 28 -mul \
+    $cdo -mul \
          -remapcon,$INPUT -selvar,$GSM_VAR_NAME $RAW_MASK \
          $INPUT \
          $OUTPUT
@@ -228,7 +228,7 @@ function caclulate_dHdt {
     # clarity:
     #
     num_seconds_in_100_years=$(python -c "num_secs=60*60*24*365*100; print('%e' % num_secs)")
-    $cdo -s -settaxis,0000-12-31,12:00,1year \
+    $cdo -settaxis,0000-12-31,12:00,1year \
          -divc,$num_seconds_in_100_years \
          -sub \
          -selyear,1/350 $INPUT \
@@ -243,8 +243,7 @@ function caclulate_dHdt {
 
     # Generate the dHdt timeseries output based upon the conversions already applied:
     num_m_per_s_in_Sv=1e6
-    $cdo -P 8 \
-        -fldsum \
+    $cdo -fldsum \
         -divc,$num_m_per_sec_in_Sv \
         -settaxis,0000-12-31,12:00,1year \
         $OUTPUT1 \
@@ -284,10 +283,10 @@ function extract_pointer_field_dHdt {
     ################################################################################
     # Select years 51 until 400 of the raw data, and reset the time axis
     $cdo -settaxis,0000-12-31,12:00,1year \
-        -selyear,51/400 \
-        -settaxis,0000-12-31,12:00,1year \
-        $RAW_DATA \
-        $OUTPUT
+         -selyear,51/400 \
+         -settaxis,0000-12-31,12:00,1year \
+         $RAW_DATA \
+         $OUTPUT
     # Perform a ncap2 operation
     ncap2 -s "T40H1=T40H1*0.1-34.95" $OUTPUT
 }
