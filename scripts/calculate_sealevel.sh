@@ -55,9 +55,14 @@ read -r -d '' usage <<'EOF'
 \033[39m
 EOF
 
+module purge
+module load cdo nco
+
+
 # Physical constants
 density_ice=9167  # kg m**-3
 density_freshwater=1000
+
 # Turn off all switches by default
 pre=0
 vol=0
@@ -116,12 +121,38 @@ done
 # define CDO with some common switches
 cdo="cdo -f nc -P 24"
 
+PROJECT_HOME=/pf/a/a270077/PalMod_boundary_conditions/generate_forcing_from_tarasov_data/
 # Define the directories to be used: original data location and temporary workdir
 RAW_DATA_DIR=${PROJECT_HOME}/original_data_ltarasov/
 WORK_DIR=${PROJECT_HOME}/work
 OUT_DATA=${PROJECT_HOME}/outdata
 
+# Define some colors and print functions to cleanly display each step:
+red='\033[0;31m'
+green='\033[0;32m'
+blue='\033[0;34m'
+bgcolor='\033[0m'
+#
+redln() { echo -e "${red}${1}${bgcolor}"; }
+blueln() { echo -e "${blue}${1}${bgcolor}"; }
+greenln () { echo -e "${green}${1}${bgcolor}"; }
+#
+
+line=________________________________________________________________________________
+
+function banner {
+    typeset line
+    line=________________________________________________________________________________
+    echo
+    blueln $line
+    echo
+    greenln "$*"
+    blueln $line
+    echo
+}
+
 function prepare_raw_data {
+    banner "Preparing raw data..."
     ### Define variable names for this function
     # RAW input
     # NOTE: Lev uses a time axis of 0.1 ka BP, and the first year is 40ka BP
@@ -141,15 +172,15 @@ function prepare_raw_data {
 
     # Prepare any RAW output that needs to be directly copied into an intermediate file
     cp ${RAW_DATA} ${GSM_HEIGHT}
-    
+
     # STEPS (Read from bottom of cdo command up)
     #
-    # 1. Transform from height to volume of water-equivalent: 
+    # 1. Transform from height to volume of water-equivalent:
     # (kg = height (m) * area (m**2) * density_ice (kg m**-3) / density_water (kg m**-3)
     #
     # 2. Correct time axis for selection of individual years
     #
-    # 3. Select years 50 until 401 (35ka BP until 0ka BP), and reset the axis to start from year 0 again 
+    # 3. Select years 50 until 401 (35ka BP until 0ka BP), and reset the axis to start from year 0 again
     $cdo -settaxis,0000-12-31,12:00,1year \
          -selyear,50/401 \
          -settaxis,0000-12-31,12:00,1year \
@@ -159,15 +190,20 @@ function prepare_raw_data {
          ${GSM_VOL}
 
     # OUTPUT:
-    mv ${GSM_VOL} ${OUTPUT_DATA}
+    cp ${GSM_VOL} ${OUTPUT_DATA}
 
     # Cleanup intermediate files
-    rm -v $rmlist
+   rm -v $rmlist
+   echo "...finished!"
 
+   echo -e "${blue} >>> OUTPUT is ${OUTPUT_DATA} ${bgcolor}"
+
+   redln $line
 }
 
 
 function calculate_masked_ice_volume {
+    banner "Calculate masked ice volume..."
     ### Define Filenames
     # RAW Files:
     RAW_MASK=${RAW_DATA_DIR}/TOPicemsk.GLACD35kN9894GE90227A6005GGrBgic.nc
@@ -176,41 +212,45 @@ function calculate_masked_ice_volume {
     # Output:
     OUTPUT=${OUT_DATA}/GSM_liquid_water_equivalent_ice_volume_35ka_masked.nc
     ### Define Variable names
-    GSM_MASK=ICEM
+    GSM_MASK_VAR_NAME=ICEM
 
     $cdo -mul \
-         -remapcon,$INPUT -selvar,$GSM_VAR_NAME $RAW_MASK \
+        -remapcon,$INPUT -selvar,$GSM_MASK_VAR_NAME $RAW_MASK \
          $INPUT \
          $OUTPUT
 
+   echo "...finished!"
+   echo -e "${blue} >>> OUTPUT is ${OUTPUT} ${bgcolor}"
+   redln $line
 }
 
 
-function caclulate_dHdt {
+function calculate_dHdt {
+    banner "Calculate dHdt..."
     ### Define Filenames:
     # Input:
     INPUT=${OUT_DATA}/GSM_liquid_water_equivalent_ice_volume_35ka_masked.nc  # UNITS m**3
     OUTPUT1=${OUT_DATA}/GSM_liquid_water_equivalent_ice_volume_35ka_masked_dHdt.nc   # units m**3/s
     # Output:
-    OUTPUT2=${OUT_DATA}/GSM_ice_mass_45ka_masked_dHdt_fldsum_Sv.nc
+    OUTPUT2=${OUT_DATA}/GSM_liquid_water_equivalent_ice_volume_35ka_masked_dHdt_fldsum_Sv.nc
 
     # In the next step, the difference between years 0/349 and 1/350 is calculated (dH)
     # and divided by the number of seconds in 100 years (dt)
-    
+
     num_seconds_in_100_years=$(python -c "num_secs=60*60*24*365*100; print('%e' % num_secs)")
     $cdo -settaxis,0000-12-31,12:00,1year \
          -divc,$num_seconds_in_100_years \
          -sub \
-         -selyear,1/350 $INPUT \
-         -selyear,0/349 $INPUT \
+         -selyear,1/350 -settaxis,0000-12-31,12:00,1year $INPUT \
+         -selyear,0/349 -settaxis,0000-12-31,12:00,1year $INPUT \
          $OUTPUT1
 
     # Perform an ncap2 operation on the variable describing the internal time axis to keep it clear.
-    # Multiply by 0.1 to go from kiloyears to 100 years, and subtract 34.95 to set to 35kaBP 
-    ncap2 -s "T122KP1=T122KP1*0.1-34.95" $OUTPUT1
+    # Multiply by 0.1 to go from kiloyears to 100 years, and subtract 34.95 to set to 35kaBP
+    ncap2 -s "T122KP11=T122KP11*0.1-34.95" $OUTPUT1
 
     # Generate the dHdt timeseries output based upon the conversions already applied:
-    num_m_per_s_in_Sv=1e6
+    num_m_per_sec_in_Sv=1e6
     $cdo -fldsum \
         -divc,$num_m_per_sec_in_Sv \
         -settaxis,0000-12-31,12:00,1year \
@@ -223,15 +263,19 @@ function caclulate_dHdt {
     # file has already been modified! Why does it need to be done twice?
     ################################################################################
     # Apply the ncap2 operation again to correct the internal variable describing the time axis
-    ncap2 -s "T122KP1=T122KP1*0.1-34.95" $OUTPUT2
-} 
+    ncap2 -s "T122KP11=T122KP11*0.1-34.95" $OUTPUT2
+   echo "...finished!"
+   echo -e "${blue} >>> OUTPUTS ARE ${OUTPUT1} ${OUTPUT2} ${bgcolor}"
+   redln $line
+}
 
 
 function calculate_eustatic_sealevel {
+    banner "Calculate eustatic sealevel..."
     INPUT=${OUT_DATA}/GSM_liquid_water_equivalent_ice_volume_35ka_masked.nc
     OUTPUT=${OUT_DATA}/GSM_liquid_water_equivalent_ice_volume_35ka_masked_global_esl.nc
     ################################################################################
-    # !!! CAUTION The area value below is the area of the ocean under 
+    # !!! CAUTION The area value below is the area of the ocean under
     # Pre-Industrial conditions. This approximation is not exact, area of ocean was
     # smaller when sea level was lower !!!
     ################################################################################
@@ -241,6 +285,9 @@ function calculate_eustatic_sealevel {
         -fldsum \
         $INPUT \
         $OUTPUT
+   echo "...finished!"
+   echo -e "${blue} >>> OUTPUT is ${OUTPUT} ${bgcolor}"
+   redln $line
 }
 
 function extract_pointer_field_dHdt {
@@ -256,7 +303,13 @@ function extract_pointer_field_dHdt {
          $OUTPUT
     # Reset the internal time axis as well
     ncap2 -s "T40H1=T40H1*0.1-34.95" $OUTPUT
+   echo "...finished!"
+   echo -e "${blue} >>> OUTPUT is ${OUTPUT} ${bgcolor}"
+   redln $line
 }
+
+# Prepare the work directory:
+[[ ! -d ${WORK_DIR} ]] && mkdir -p ${WORK_DIR}
 
 if [[ $pre = 1 ]]
 then
@@ -287,3 +340,8 @@ if [[ $pnt = 1 ]]
 then
     extract_pointer_field_dHdt
 fi
+
+# Clean up the work directory:
+[[ -d ${WORK_DIR} ]] && rm -rf ${WORK_DIR}
+
+
