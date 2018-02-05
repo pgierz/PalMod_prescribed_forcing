@@ -9,12 +9,15 @@
 #
 # RETURNED OUTPUTS: TODO
 #
+# For LGM LSM, xgong
+#
 # Project: PalMod
 # Date: 2016-2019
 #
 # Scientists:
 # Dr. Xu Zhang,   AWI Bremerhaven
 # Dr. Paul Gierz, AWI Bremerhaven
+# Dr. Xun Gong, AWI Bremerhaven
 #
 # ------------
 # Changes:
