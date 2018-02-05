@@ -60,7 +60,7 @@ module load cdo nco
 
 
 # Physical constants
-density_ice=9167  # kg m**-3
+density_ice=916.7  # kg m**-3
 density_freshwater=1000
 
 # Turn off all switches by default
@@ -274,11 +274,13 @@ function calculate_eustatic_sealevel {
     banner "Calculate eustatic sealevel..."
     INPUT=${OUT_DATA}/GSM_liquid_water_equivalent_ice_volume_35ka_masked.nc
     OUTPUT=${OUT_DATA}/GSM_liquid_water_equivalent_ice_volume_35ka_masked_global_esl.nc
-    ################################################################################
-    # !!! CAUTION The area value below is the area of the ocean under
-    # Pre-Industrial conditions. This approximation is not exact, area of ocean was
-    # smaller when sea level was lower !!!
-    ################################################################################
+    echo -e "${red}"
+    echo -e "#################################################################################"
+    echo -e " !!! CAUTION The area value used in this calculation (3.62E14) is the area of the ocean under"
+    echo -e " !!! Pre-Industrial conditions. It is *NOT* derived from the modelled area (THIS NEEDS TO BE FIXED!!!)"
+    echo -e " !!! This approximation is not exact, area of ocean was smaller when sea level was lower !!!"
+    echo -e "################################################################################"
+    echo -e "${bgcolor}"
     area_of_ocean=3.62E14  # UNITS: m**2
     $cdo -settaxis,0000-12-31,12:00,1year \
         -divc,$area_of_ocean \
