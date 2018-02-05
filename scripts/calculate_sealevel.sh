@@ -233,7 +233,12 @@ function calculate_dHdt {
     OUTPUT1=${OUT_DATA}/GSM_liquid_water_equivalent_ice_volume_35ka_masked_dHdt.nc   # units m**3/s
     # Output:
     OUTPUT2=${OUT_DATA}/GSM_liquid_water_equivalent_ice_volume_35ka_masked_dHdt_fldsum_Sv.nc
-
+    
+    echo -e "${red}"
+    echo -e " >>> OUTPUT2 will be the file used for the salinity compensation! "
+    echo -e " >>> $OUTPUT2 "
+    echo -e "${bgcolor}"
+    
     # In the next step, the difference between years 0/349 and 1/350 is calculated (dH)
     # and divided by the number of seconds in 100 years (dt)
 
