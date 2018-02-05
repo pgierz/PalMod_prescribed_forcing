@@ -48,6 +48,7 @@ read -r -d '' usage <<'EOF'
     -d, --dHdt        calculate dHdt\n
     -s, --sealevel    calculate eustatic sealevel\n
     -p, --pointers    calculate pointer fields\n
+    -a, --all         calculate all relevant fields\n
 \n
 \033[39m
 \033[31m  !!! NOTE THAT THE RAW, INPUT, AND OUTPUT FILENAMES ARE HARD-CODED !!!
@@ -185,7 +186,7 @@ function prepare_raw_data {
 function calculate_masked_ice_volume {
     ### Define Filenames
     # RAW Files:
-    RAW_MASK=${RAW_DATA_DIR}/TOPicemsk.GLACD35kN9894GE90227A6005GGrBgic.nc 
+    RAW_MASK=${RAW_DATA_DIR}/TOPicemsk.GLACD35kN9894GE90227A6005GGrBgic.nc
     # Input:
     INPUT=${OUT_DATA}/GSM_ice_mass_35ka.nc
     # Output:
