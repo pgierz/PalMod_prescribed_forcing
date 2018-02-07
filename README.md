@@ -7,12 +7,12 @@ Transformation scripts (originally written by X. Zhang, originals backed up in
 `original_scripts_xzhang`) have been cleaned up and documented **considerably**,
 and are stored in `scripts`.
 
-Each may be run with an argument `./$SCRIPT_NAME -h ` to obtain usage
+Each may be run without any arguments `./$SCRIPT_NAME` to obtain usage
 information and purpose.
 
 ## `calculate_sealevel.sh`
 
-This script generates several data files which may be used to approximate freshwater flux during Termination I (T-I), approximately 35ka BP to present. Original data from the Glacial Systems Model (GSM) is provided by Lev Tarasov, and is not documented in detail here.
+This script generates several data files which may be used to approximate freshwater flux during Termination I (T-I), approximately 35ka BP to present. Original simulation output from the Glacial Systems Model (GSM) is provided by Lev Tarasov, and is not documented in detail here.
 
 Freshwater flux from the collapsing Northern Hemisphere ice sheets may be estimated by the change in their height over time ($\delta \eta / \delta t$). In order to conserve mass between the two grids, we must convert the height of ice to a mass of freshwater, and then scale with area of the ocean grid in order to obtain a flux of freshwater at each ocean cell:
 
